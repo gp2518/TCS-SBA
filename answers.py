@@ -911,4 +911,166 @@ def create_langsmith_dataset():
 
     return dataset.id
 
+# ─────────────────────────────────────────────────────────────
+# TASK 20 — Run an Evaluation with LangSmith
+# ─────────────────────────────────────────────────────────────
+
+
+from langsmith.evaluation import evaluate
+
+
+
+
+def run_langsmith_evaluation() -> dict:
+    def target(inputs: dict) -> dict:
+        return {
+            "answer": basic_rag_pipeline(
+                RAG_DOCUMENTS,
+                inputs["question"]
+            )
+        }
+
+
+
+
+    def evaluator(run, example):
+        expected = example.outputs["answer"].lower()
+        predicted = run.outputs["answer"].lower()
+
+
+        passed = expected in predicted
+
+
+        return {
+            "key": "answer_match",
+            "score": 1.0 if passed else 0.0,
+        }
+
+
+    results = evaluate(
+        target,
+        data="rag-eval-dataset",
+        evaluators=[evaluator],
+        experiment_prefix="rag-challenge-eval",
+    )
+
+
+    return {
+        "dataset": "rag-eval-dataset",
+        "num_examples": len(results),
+        "pass_rate": sum(r.get("score", 0) for r in results) / len(results),
+    }
+# =============================================================
+#  MAIN — run and print results for each task
+# =============================================================
+
+
+if __name__ == "__main__":
+
+
+    print("=" * 60)
+    print("LANGCHAIN · RAG · PGVECTOR · EMBEDDINGS · LANGSMITH")
+    print("20-Task Coding Challenge")
+    print("=" * 60)
+
+
+    # ── Section B ─────────────────────────────────────────────
+    print("\n── SECTION B: Embeddings ──────────────────────────────\n")
+
+
+    sentences = [
+        "LangChain simplifies LLM application development.",
+        "pgvector adds vector search to PostgreSQL.",
+        "RAG grounds language models with external knowledge.",
+    ]
+
+
+    print("\n[Task 6] Cosine Similarity")
+    word_pairs = compare_word_pairs()
+    print(f"  dog vs puppy      : {word_pairs.get('dog_vs_puppy', ''):.4f}")
+    print(f"  dog vs automobile : {word_pairs.get('dog_vs_automobile', ''):.4f}")
+    print(f"  More similar      : {word_pairs.get('more_similar_pair')}")
+
+
+    print("\n[Task 7] Batch Embedding with Chunking")
+    chunk_info = batch_embed_with_chunks(SAMPLE_DOCUMENT, 200, 40)
+    print(f"  Chunks     : {chunk_info.get('num_chunks')}")
+    print(f"  Embed dims : {chunk_info.get('embedding_dim')}")
+
+
+    print("\n[Task 8] Compare Embedding Models")
+    model_cmp = compare_embedding_models("Vector databases power semantic search.")
+    print(f"  Model A dims : {model_cmp.get('model_a', {}).get('dims')}")
+    print(f"  Model B dims : {model_cmp.get('model_b', {}).get('dims')}")
+    print(f"  Dim ratio    : {model_cmp.get('dim_ratio')}")
+
+
+    # ── Section C ─────────────────────────────────────────────
+    print("\n── SECTION C: pgvector ────────────────────────────────\n")
+
+
+    docs_to_insert = [
+        ("LangChain enables LLM pipelines.", {"source": "docs", "page": 1}),
+        ("pgvector stores vector embeddings.", {"source": "docs", "page": 2}),
+        ("RAG retrieves relevant context.",   {"source": "paper", "page": 5}),
+        ("LangSmith traces LLM calls.",       {"source": "blog",  "page": 1}),
+    ]
+
+
+    # ── Section D ─────────────────────────────────────────────
+    print("\n── SECTION D: RAG Agents ──────────────────────────────\n")
+
+
+    print("[Task 14] Basic RAG Pipeline")
+    rag_ans = basic_rag_pipeline(RAG_DOCUMENTS, "What is LCEL?")
+    print(" ", rag_ans)
+
+
+    print("\n[Task 15] RAG with Source Attribution")
+    rag_src = rag_with_sources(RAG_DOCUMENTS, "What distance metrics does pgvector support?")
+    print("  Answer  :", rag_src.get("answer", ""))
+    print("  Sources :")
+    for s in rag_src.get("sources", []):
+        print(f"    [{s.get('score', 0):.4f}] {s.get('content', '')[:60]}")
+
+
+    print("\n[Task 16] Conversational RAG")
+    conv_answers = conversational_rag(RAG_DOCUMENTS)
+    print("  Turn 1:", conv_answers[0][:80] if conv_answers else "")
+    print("  Turn 2:", conv_answers[1][:80] if len(conv_answers) > 1 else "")
+
+
+    print("\n[Task 17] RAG Agent")
+    agent_ans = rag_agent("What distance metrics does pgvector support?")
+    print(" ", agent_ans)
+
+
+    # ── Section E ─────────────────────────────────────────────
+    print("\n── SECTION E: LangSmith ───────────────────────────────\n")
+
+
+    print("[Task 18] Traced Chain")
+    traced = traced_chain("embeddings")
+    print(f"  Answer : {str(traced.get('answer', ''))[:80]}")
+    print(f"  Run ID : {traced.get('run_id')}")
+
+
+    print("\n[Task 19] Create LangSmith Dataset")
+    dataset_id = create_langsmith_dataset()
+    print(f"  Dataset ID: {dataset_id}")
+
+
+    print("\n[Task 20] Run LangSmith Evaluation")
+    eval_summary = run_langsmith_evaluation()
+    print(f"  Dataset     : {eval_summary.get('dataset')}")
+    print(f"  # Examples  : {eval_summary.get('num_examples')}")
+    print(f"  Pass rate   : {eval_summary.get('pass_rate')}")
+
+
+    print("\n" + "=" * 60)
+    print("All tasks complete!")
+    print("=" * 60)
+
+
+
 
