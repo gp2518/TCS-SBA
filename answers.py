@@ -1,31 +1,163 @@
-#Git Answers Submission
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
-from langchain_core.output_parsers import StrOutputParser
+"""
+=============================================================
+  PYTHON CODING CHALLENGE
+  Topic   : LangChain v1 · RAG Agents · pgvector ·
+            Embeddings · LangSmith
+  Level   : Intermediate
+  Tasks   : 20  (project-style, grouped by topic)
+=============================================================
+
+
+SETUP — install dependencies before you begin
+----------------------------------------------
+  pip install langchain langchain-openai langchain-community
+              langchain-core langsmith psycopg2-binary numpy
+              python-dotenv
+
+
+ENVIRONMENT VARIABLES — create a .env file or export these:
+  OPENAI_API_KEY       = "sk-..."
+  LANGCHAIN_API_KEY    = "ls__..."        # LangSmith
+  LANGCHAIN_TRACING_V2 = "true"
+  LANGCHAIN_PROJECT    = "rag-challenge"
+  PG_CONNECTION_STRING = "postgresql+psycopg2://user:pass@localhost:5432/vectordb"
+
+
+TOPIC SECTIONS
+--------------
+  Section A — LangChain Core         (Tasks  1 – 4)
+  Section B — Embeddings             (Tasks  5 – 8)
+  Section C — pgvector               (Tasks  9 – 13)
+  Section D — RAG Agents             (Tasks 14 – 17)
+  Section E — LangSmith              (Tasks 18 – 20)
+
+
+RULES
+-----
+  - Implement every function stub below.
+  - Do NOT add extra libraries beyond those listed in Setup.
+  - Keep function signatures exactly as given.
+  - For tasks that call an LLM, handle API errors gracefully
+    with try/except.
+=============================================================
+"""
 
 
 import os
 import numpy as np
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 
-def basic_lcel_chain(topic: str) -> str:
-    """Returns a one-paragraph explanation of the given topic."""
+# ─────────────────────────────────────────────────────────────
+# TASK 6 — Cosine Similarity (from scratch, then with numpy)
+# ─────────────────────────────────────────────────────────────
+"""
+TASK 6: Cosine Similarity
+---------------------------
+Part A: Implement cosine_similarity_manual(v1, v2) WITHOUT
+        using numpy.  Use only Python loops / math.
+Part B: Implement cosine_similarity_numpy(v1, v2) using numpy.
 
-    prompt = ChatPromptTemplate.from_template(
-        "Explain the topic '{topic}' in one clear paragraph."
+
+Both should return a float between -1 and 1.
+
+
+Then embed these two pairs and print which pair is more similar:
+  Pair 1: "dog" vs "puppy"
+  Pair 2: "dog" vs "automobile"
+
+
+Formula:
+  cosine_similarity = (v1 · v2) / (||v1|| × ||v2||)
+
+
+HINT:
+  dot product: sum(a*b for a, b in zip(v1, v2))
+  magnitude  : sum(x**2 for x in v) ** 0.5
+  numpy equiv: np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+"""
+
+
+import math
+
+
+
+
+def cosine_similarity_manual(v1: list, v2: list) -> float:
+    """Computes cosine similarity using pure Python."""
+    dot_product = sum(a * b for a, b in zip(v1, v2))
+    magnitude_v1 = math.sqrt(sum(x * x for x in v1))
+    magnitude_v2 = math.sqrt(sum(x * x for x in v2))
+
+
+
+
+    if magnitude_v1 == 0 or magnitude_v2 == 0:
+        return 0.0
+
+
+
+
+    return dot_product / (magnitude_v1 * magnitude_v2)
+
+
+
+
+import numpy as np
+
+
+
+
+def cosine_similarity_numpy(v1: list, v2: list) -> float:
+    """Computes cosine similarity using numpy."""
+    v1 = np.array(v1)
+    v2 = np.array(v2)
+
+
+
+
+    return float(
+        np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
     )
 
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0.5,
-    )
 
-    parser = StrOutputParser()
-    chain = prompt | llm | parser
-    return chain.invoke({"topic": topic})
 
-result = basic_lcel_chain("quantum computing")
-print(result)
+
+
+
+from langchain_openai import OpenAIEmbeddings
+
+
+
+
+def compare_word_pairs() -> dict:
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
+
+
+
+    dog = embeddings.embed_query("dog")
+    puppy = embeddings.embed_query("puppy")
+    automobile = embeddings.embed_query("automobile")
+
+
+
+
+    sim_dog_puppy = cosine_similarity_numpy(dog, puppy)
+    sim_dog_auto = cosine_similarity_numpy(dog, automobile)
+
+
+
+
+    return {
+        "dog_vs_puppy": sim_dog_puppy,
+        "dog_vs_automobile": sim_dog_auto,
+        "more_similar_pair": (
+            "dog vs puppy"
+            if sim_dog_puppy > sim_dog_auto
+            else "dog vs automobile"
+        ),
+    }
