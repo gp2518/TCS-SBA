@@ -1075,3 +1075,4 @@ if __name__ == "__main__":
 
 
 
+    return {"answer": answer, "sources": sources}
